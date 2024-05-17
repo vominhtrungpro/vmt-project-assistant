@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Welcome to the Flask API!"
+    return "Welcome to the Assistant OpenAI!"
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
