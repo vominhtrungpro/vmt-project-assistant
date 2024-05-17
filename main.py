@@ -3,7 +3,7 @@ from openai import OpenAI
 import json
 
 
-key = 'sk-proj-P4D1YHceWNYKCpnohX2jT3BlbkFJzRrP66MSh5f2m8H1nT0a'
+key = 'sk-proj-Poz0B4uw5NWZYDLcRECbT3BlbkFJ1eMXFcYVLd7JwJ3XHVK1'
 
 client = OpenAI(api_key=key)
 
@@ -51,9 +51,24 @@ def get_assistants():
         limit="20",
     )
 
-    assistants_list = [assistant_response(assistant) for assistant in assistants.data]
+    response = [assistant_response(assistant) for assistant in assistants.data]
 
-    return jsonify(assistants_list)
+    return jsonify(response)
+
+def thread_response(thread):
+    return {
+        'id': thread.id,
+        'object': thread.object,
+        'created_at': thread.created_at,
+        'metadata': {},
+        'tool_resources': {},
+    }
+
+@app.route('/api/threads',methods=['POST'])
+def create_thread():
+    thread = client.beta.threads.create()
+    return jsonify(thread_response(thread))
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
