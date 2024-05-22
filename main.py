@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response, request
 from openai import OpenAI
 import os
 
@@ -68,6 +68,30 @@ def create_thread():
     thread = client.beta.threads.create()
     return jsonify(thread_response(thread))
 
+
+@app.route('/api/run',methods=['POST'])
+def create_run():
+    data = request.get_json()  
+    thread_id = data.get('thread_id')
+    message = data.get('message')
+
+    thread_message = client.beta.threads.messages.create(
+        thread_id,
+        role="user",
+        content=message,
+    )
+
+    def generate():
+        stream = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id="asst_f8T3OBfPEHGrT0viJYGg4Lvg",
+            stream=True
+        )
+
+        for event in stream:
+            yield f"data: {event}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
