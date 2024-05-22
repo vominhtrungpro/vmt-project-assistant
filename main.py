@@ -93,6 +93,8 @@ def create_run():
         for event in stream:
             if event.event == "thread.message.delta":
                 yield f"data: {event.data.delta.content[0].text.value}\n\n"
+            if event.event == "thread.message.completed":
+                yield f"data: {event.data.content[0].text.value}\n\n"
             
     return Response(generate(), mimetype='text/event-stream')
 
