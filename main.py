@@ -5,6 +5,8 @@ from flask_cors import CORS
 
 key = os.environ.get('openai_key')
 
+key = 'sk-proj-wQaeshLQylSoeYkZkbXDT3BlbkFJJYjg1yVi8BXGdWnJtV9C'
+
 client = OpenAI(api_key=key)
 
 app = Flask(__name__)
@@ -91,8 +93,6 @@ def create_run():
         )
 
         for event in stream:
-            if event.event == "thread.message.delta":
-                yield f"data: {event.data.delta.content[0].text.value}\n\n"
             if event.event == "thread.message.completed":
                 yield f"data: {event.data.content[0].text.value}\n\n"
             
