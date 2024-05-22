@@ -12,7 +12,7 @@ CORS(app)
 
 @app.route('/')
 def home():
-    return "Welcome to the Assistant OpenAI!"
+    return "Welcome to the Assistant OpenAI powered by Trung Vo!"
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
