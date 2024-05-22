@@ -12,7 +12,7 @@ CORS(app)
 
 @app.route('/')
 def home():
-    return "Welcome to the Assistant OpenAI powered by vominhtrungpro!"
+    return "Welcome to the Assistant OpenAI powered by vominhtrungpro@gmail.com!"
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
@@ -91,8 +91,8 @@ def create_run():
         )
 
         for event in stream:
-            if event.event == "thread.message.completed":
-                yield f"data: {event.data.content[0].text.value}\n\n"
+            if event.event == "thread.message.delta":
+                yield f"data: {event.data.delta.content[0].text.value}\n\n"
             
     return Response(generate(), mimetype='text/event-stream')
 
