@@ -3,7 +3,9 @@ from openai import OpenAI
 import os
 from flask_cors import CORS
 
-key = os.environ.get('openai_key')
+# key = os.environ.get('openai_key')
+
+key = 'sk-proj-rrNqBsLZT7xj7UMXN4L7T3BlbkFJhlzQ7F9bPPJg9FpQcylk'
 
 isAssistantOnline = os.environ.get('is_assistant_enable')
 
@@ -74,11 +76,10 @@ def create_thread():
 
 
 @app.route('/api/run',methods=['POST'])
-def create_run():
-    if isAssistantOnline is False:
-        yield f"data: Currently Offline!"
-        return Response(generate(), mimetype='text/event-stream')
-       
+def create_run():    
+    if not isAssistantOnline:
+        return Response("Currently Offline!", mimetype='text/plain')
+    
     data = request.get_json()  
     thread_id = data.get('thread_id')
     message = data.get('message')
