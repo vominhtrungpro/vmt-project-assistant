@@ -3,9 +3,7 @@ from openai import OpenAI
 import os
 from flask_cors import CORS
 
-# key = os.environ.get('openai_key')
-
-key = 'sk-proj-rrNqBsLZT7xj7UMXN4L7T3BlbkFJhlzQ7F9bPPJg9FpQcylk'
+key = os.environ.get('openai_key')
 
 isAssistantOnline = os.environ.get('is_assistant_enable')
 
