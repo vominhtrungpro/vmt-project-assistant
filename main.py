@@ -76,7 +76,7 @@ def create_thread():
 @app.route('/api/run',methods=['POST'])
 def create_run():
     if isAssistantOnline is False:
-        yield f"data: Assistant Offline"
+        yield f"data: Currently Offline!"
         return Response(generate(), mimetype='text/event-stream')
        
     data = request.get_json()  
