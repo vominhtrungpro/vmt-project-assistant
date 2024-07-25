@@ -2,6 +2,10 @@ from flask import Flask, jsonify, Response, request
 from openai import OpenAI
 import os
 from flask_cors import CORS
+import requests
+import json
+
+api_url = 'https://vmt-api-practice.azurewebsites.net/api/Character'
 
 key = os.environ.get('openai_key')
 
@@ -98,6 +102,158 @@ def create_run():
                 yield f"data: {event.data.delta.content[0].text.value}\n\n"
             
     return Response(generate(), mimetype='text/event-stream')
+    
+
+
+def get_character_names():
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()  # Kiểm tra nếu có lỗi xảy ra
+        data = response.json()  # Giả sử API trả về JSON
+        
+        if data["isSuccess"]:
+            names = [character["name"] for character in data["data"]]
+            return json.dumps({"isSuccess": True, "name": names})
+        else:
+            return json.dumps({"isSuccess": False})
+    except requests.exceptions.HTTPError as err:
+        return json.dumps({"isSuccess": False})
+    except Exception as err:
+        return json.dumps({"isSuccess": False})
+
+def create_character(name):
+    try:
+        headers = {'Content-Type': 'application/json'}
+        payload = {'name': name}
+    
+        # Make the POST request
+        response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+    
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Return the JSON response
+            return json.dumps({"isSuccess": True})
+        else:
+            return json.dumps({"isSuccess": False})
+        
+    except requests.exceptions.HTTPError as err:
+        return json.dumps({"isSuccess": False})
+    except Exception as err:
+        return json.dumps({"isSuccess": False})
+    
+    
+
+
+
+def get_current_weather(location, unit="fahrenheit"):
+    """Get the current weather in a given location"""
+    if "tokyo" in location.lower():
+        return json.dumps({"location": "Tokyo", "temperature": "10", "unit": unit})
+    elif "san francisco" in location.lower():
+        return json.dumps({"location": "San Francisco", "temperature": "72", "unit": unit})
+    elif "paris" in location.lower():
+        return json.dumps({"location": "Paris", "temperature": "22", "unit": unit})
+    else:
+        return json.dumps({"location": location, "temperature": "unknown"})
+
+
+def run_conversation():
+    # Step 1: send the conversation and available functions to the model
+    messages = [{"role": "user", "content": "Create a character name Stelle?"}]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_current_weather",
+                "description": "Get the current weather in a given location",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The city and state, e.g. San Francisco, CA",
+                        },
+                        "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                    },
+                    "required": ["location"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_character_names",
+                "description": "Get all character names",
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_character",
+                "description": "Create a character",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The name of character",
+                        },
+                    },
+                    "required": ["name"],
+                },
+            },
+        },
+    ]
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        tools=tools,
+        tool_choice="auto",  # auto is default, but we'll be explicit
+    )
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    # Step 2: check if the model wanted to call a function
+    if tool_calls:
+        # Step 3: call the function
+        # Note: the JSON response may not always be valid; be sure to handle errors
+        available_functions = {
+            "get_current_weather": get_current_weather,
+            "get_character_names": get_character_names,
+            "create_character" : create_character
+        }  # only one function in this example, but you can have multiple
+        messages.append(response_message)  # extend conversation with assistant's reply
+        # Step 4: send the info for each function call and function response to the model
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            function_to_call = available_functions[function_name]
+            function_args = json.loads(tool_call.function.arguments)
+            if function_name == "get_character_names":
+                function_response = function_to_call(api_url)
+            if function_name == "get_current_weather":
+                function_response = function_to_call(
+                    location=function_args.get("location"),
+                    unit=function_args.get("unit"),
+                )
+            if function_name == "create_character":
+                function_response = function_to_call(
+                    name=function_args.get("name")
+                )
+            messages.append(
+                {
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": function_name,
+                    "content": function_response,
+                }
+            )  # extend conversation with function response
+        second_response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+        )  # get a new response from the model where it can see the function response
+        return second_response
+    
+print(run_conversation())
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
